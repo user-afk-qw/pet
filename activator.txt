@@ -1,0 +1,28 @@
+public void Activator(double[] i)
+{
+    inputs = i;
+    double sum = weights[0]; // bias
+
+    for (int j = 0; j < inputs.Length; j++)
+    {
+        sum += inputs[j] * weights[j + 1]; // умножение!
+    }
+
+    switch (type)
+    {
+        case NeuronType.Hidden:
+            output = LeakyReLU(sum);
+            derivative = LeakyReLU_Derivativater(sum);
+            break;
+
+        case NeuronType.Output:
+            output = Exp(sum);
+            derivative = Exp(sum); // производная экспоненты = сама экспонента
+            break;
+    }
+
+    double leakyReLU(double x) => x > 0 ? x : 0.01 * x;
+    double LeakyReLU_Derivativater(double x) => x > 0 ? 1 : 0.01;
+
+    double Exp(double x) => Math.Exp(x);
+}
