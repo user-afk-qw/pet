@@ -1,28 +1,104 @@
-public void Activator(double[] i)
+using System;
+using System.IO;
+using System.Windows.Forms;
+
+namespace PI32_tsygancko_pet.neuroNet
 {
-    inputs = i;
-    double sum = weights[0]; // bias
-
-    for (int j = 0; j < inputs.Length; j++)
+    abstract class Layer
     {
-        sum += inputs[j] * weights[j + 1]; // умножение!
+        //поля
+        protected string name_Layer; // Наименования слоя который используется
+        string pathDirWeights; //путь к дирректории в которой лежат веса
+        string pathFileWeights; //путь к файлу в котором лежат веса
+        protected int numofneurons; //число нейронов этого слоя
+        protected int numofprevneurons; //число нейронов предыдущего слоя
+        protected const double learningrate = 0.05d; //скорость обучения
+        protected const double momentum = 0.050d; //момент инерции
+        protected double[,] lastdeltaweights; //веса предыдущей итерации обучения
+        protected Neuron[] neurons; //массив нейронов текущео слоя
+
+
+
+
+
+
+
+        //Свойства
+
+        public double[] Data //передача входных данных на этот слой
+        {
+            set
+            {
+                for(int i = 0;i < numofneurons; i++)
+                {
+                    neurons[i].Activator(value);
+                }
+            }
+        }
+
+        //Конструктор
+        protected Layer(int non, int nopn, NeuronType nt, string nm_Layer)
+        {
+            numofneurons = non;
+            numofprevneurons = nopn;
+            neurons = new Neuron[non];
+            name_Layer = nm_Layer;
+            pathDirWeights = AppDomain.CurrentDomain.BaseDirectory + "memory\\";
+            pathFileWeights = pathDirWeights + name_Layer + "_memory.csv";
+
+            lastdeltaweights = new double[non, nopn + 1];
+            double[,] Weights;
+
+
+            if (File.Exists(pathFileWeights))
+                Weights = WeightInitialize(MemoryMode.GET, pathFileWeights);
+            else
+            {
+                Directory.CreateDirectory(pathDirWeights);
+                Weights = WeightInitialize(MemoryMode.INIT, pathFileWeights);
+            }
+
+            for(int i = 0; i < non; i++)
+            {
+                double[] tmp_weights = new double[nopn + 1];
+                for ( int j = 0;j < nopn; j++)
+                {
+                    tmp_weights[j] = Weights[i, j];
+                }
+                neurons[i] = new Neuron(tmp_weights, nt); //
+            }
+        }
+
+        public double[,] WeightInitialize(MemoryMode mm, string path)
+        {
+            char[]delim = {';', ' '};// Разделитель слов 
+            string tmpStr; //Строка для чтения
+            string[] tmpStrWeights;
+            double[,] weights = new double[numofneurons, numofprevneurons + 1]; //Массив весов
+
+            switch (mm)
+            {
+                case MemoryMode.GET:
+                    tmpStrWeights = File.ReadAllLines(path);
+                    string[] memoy_element;
+                    for (int i = 0;i< numofneurons; i++)
+                    {
+                        memoy_element = tmpStrWeights[i].Split(delim);
+                        for(int j = 0; j< numofprevneurons + 1; j++)
+                        {
+                            weights[i,j] = double.Parse(memoy_element[j].Replace(',','.'), System.Globalization.CultureInfo.InvariantCulture);
+                        }
+                    }
+                    break;
+                case MemoryMode.SET:
+                    break;
+                case MemoryMode.INIT:
+                    break;
+                default:
+                    break;
+            }
+
+            return weights; 
+        }
     }
-
-    switch (type)
-    {
-        case NeuronType.Hidden:
-            output = LeakyReLU(sum);
-            derivative = LeakyReLU_Derivativater(sum);
-            break;
-
-        case NeuronType.Output:
-            output = Exp(sum);
-            derivative = Exp(sum); // производная экспоненты = сама экспонента
-            break;
-    }
-
-    double leakyReLU(double x) => x > 0 ? x : 0.01 * x;
-    double LeakyReLU_Derivativater(double x) => x > 0 ? 1 : 0.01;
-
-    double Exp(double x) => Math.Exp(x);
 }
